@@ -7,9 +7,12 @@ type NewNoteCardProps = {
   onNoteCreated: (content: string) => void;
 };
 
+let speechRecognition: SpeechRecognition | null = null;
+
 export function NewNoteCard({ onNoteCreated }: NewNoteCardProps) {
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(true);
   const [content, setContent] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
 
   const handleStartEditor = () => {
     setShouldShowOnboarding(false);
@@ -28,11 +31,59 @@ export function NewNoteCard({ onNoteCreated }: NewNoteCardProps) {
   const handleSaveNote = (event: FormEvent) => {
     event.preventDefault();
 
+    if (content.trim() === "") {
+      toast.error("O conteúdo da nota não pode estar vazio.");
+      return;
+    }
+
     onNoteCreated(content);
     setContent("");
     setShouldShowOnboarding(true);
 
     toast.success("Nota criada com sucesso!");
+  };
+
+  const handleStartRecording = () => {
+    const isSpeechRecognitionSupported = "webkitSpeechRecognition" in window || "SpeechRecognition" in window;
+
+    if (!isSpeechRecognitionSupported) {
+      toast.error("Seu navegador não suporta reconhecimento de voz.");
+      return;
+    }
+
+    setIsRecording(true);
+    setShouldShowOnboarding(false);
+
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+
+    speechRecognition = new SpeechRecognition();
+    speechRecognition.lang = "pt-BR";
+    speechRecognition.continuous = true;
+    speechRecognition.maxAlternatives = 1;
+    speechRecognition.interimResults = true;
+    speechRecognition.onresult = (event) => {
+      const transcription = Array.from(event.results)
+        .reduce((text, result) => {
+          return text.concat(result[0].transcript);
+        }, "");
+
+      setContent(transcription);
+    };
+
+    speechRecognition.onerror = (event) => {
+      console.error("Erro no reconhecimento de voz: ", event.error);
+    };
+
+    speechRecognition.start();
+  };
+
+  const handleStopRecording = () => {
+    if (!speechRecognition) {
+      return;
+    }
+
+    speechRecognition.stop();
+    setIsRecording(false);
   };
 
   return (
@@ -49,7 +100,7 @@ export function NewNoteCard({ onNoteCreated }: NewNoteCardProps) {
             <X className="size-5" />
           </Dialog.Close>
 
-          <form className="flex flex-col flex-1" onSubmit={handleSaveNote}>
+          <form className="flex flex-col flex-1">
             <div className="flex flex-1 flex-col gap-3 p-5">
               <p className="text-sm font-medium text-slate-300">Adicionar nota</p>
 
@@ -58,7 +109,7 @@ export function NewNoteCard({ onNoteCreated }: NewNoteCardProps) {
                     <p className="text-sm leading-6 text-slate-400">
                       Comece
                       {" "}
-                      <button type="button" className="font-medium text-lime-400 hover:underline">gravando uma nota</button>
+                      <button type="button" className="font-medium text-lime-400 hover:underline" onClick={handleStartRecording}>gravando uma nota</button>
                       {" "}
                       em áudio, ou se preferir,
                       {" "}
@@ -72,9 +123,19 @@ export function NewNoteCard({ onNoteCreated }: NewNoteCardProps) {
 
             </div>
 
-            <button type="submit" className="w-full bg-lime-400 py-4 text-center text-sm text-lime-950 outline-none font-medium hover:bg-lime-500 transition-colors">
-              Salvar nota
-            </button>
+            {isRecording
+              ? (
+                  <button type="button" className="flex items-center gap-2 justify-center w-full bg-slate-900 py-4 text-center text-sm text-slate-300 outline-none font-medium hover:text-slate-100 transition-colors" onClick={handleStopRecording}>
+                    <div className="size-3 rounded-full bg-red-500 animate-pulse" />
+                    Gravando (clique para interromper)
+                  </button>
+                )
+              : (
+                  <button type="button" className="w-full bg-lime-400 py-4 text-center text-sm text-lime-950 outline-none font-medium hover:bg-lime-500 transition-colors" onClick={handleSaveNote}>
+                    Salvar nota
+                  </button>
+                )}
+
           </form>
 
         </Dialog.Content>

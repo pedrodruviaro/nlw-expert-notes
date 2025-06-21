@@ -3,14 +3,18 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { X } from "lucide-react";
 
+import type { Note } from "../app";
+
 type NoteCardProps = {
-  note: {
-    date: Date;
-    content: string;
-  };
+  note: Note;
+  onNoteDeleted: (id: string) => void;
 };
 
-export function NoteCard({ note }: NoteCardProps) {
+export function NoteCard({ note, onNoteDeleted }: NoteCardProps) {
+  const handleDeleteNote = () => {
+    onNoteDeleted(note.id);
+  };
+
   return (
     <Dialog.Root>
       <Dialog.Trigger type="button" className="flex flex-col gap-3 text-left rounded-md outline-none bg-slate-800 p-5 overflow-hidden relative hover:ring-2 hover:ring-slate-600 focus-visible:ring-2 focus-visible:ring-lime-400">
@@ -36,7 +40,7 @@ export function NoteCard({ note }: NoteCardProps) {
             </p>
           </div>
 
-          <button type="button" className="w-full bg-slate-800 py-4 text-center text-sm text-slate-300 outline-none font-medium group">
+          <button onClick={handleDeleteNote} type="button" className="w-full bg-slate-800 py-4 text-center text-sm text-slate-300 outline-none font-medium group">
             Deseja
             {" "}
             <span className="text-red-400 group-hover:underline">apagar essa nota</span>

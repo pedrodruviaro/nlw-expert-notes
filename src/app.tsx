@@ -4,7 +4,7 @@ import { useState } from "react";
 import { NewNoteCard } from "./components/new-note-card";
 import { NoteCard } from "./components/note-card";
 
-type Note = {
+export type Note = {
   id: string;
   date: Date;
   content: string;
@@ -40,6 +40,12 @@ export function App() {
     setSearch(value);
   };
 
+  const onNoteDeleted = (id: string) => {
+    const updatedNotes = notes.filter(note => note.id !== id);
+    setNotes(updatedNotes);
+    localStorage.setItem("notes", JSON.stringify(updatedNotes));
+  };
+
   const filteredNotes = search !== ""
     ? notes.filter(note =>
         note.content.toLowerCase().includes(search.toLowerCase()),
@@ -47,7 +53,7 @@ export function App() {
     : notes;
 
   return (
-    <main className="mx-auto max-w-6xl my-12 space-y-6">
+    <main className="mx-auto max-w-6xl my-12 space-y-6 px-6">
       <div>
         <span className="font-semibold text-xl tracking-tight font-mono ">expert notes</span>
       </div>
@@ -64,13 +70,14 @@ export function App() {
 
       <div className="h-px bg-slate-700" />
 
-      <section className="grid grid-cols-3 auto-rows-[250px] gap-6" ref={parent}>
+      <section className="grid md:grid-cols-2 lg:grid-cols-3 auto-rows-[250px] gap-6" ref={parent}>
         <NewNoteCard onNoteCreated={onNoteCreated} />
 
         {filteredNotes.map(note => (
           <NoteCard
             key={note.id}
             note={note}
+            onNoteDeleted={onNoteDeleted}
           />
         ))}
 
